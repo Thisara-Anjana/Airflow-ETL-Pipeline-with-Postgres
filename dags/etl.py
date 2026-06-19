@@ -20,8 +20,19 @@ with DAG(
         ##initialize the Postgres hook
         postgres_hook = PostgresHook(postgres_conn_id="my_postgres_connection")
 
-        ##
-
+        ##SQL Query to create the table 
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS apod (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255),
+        explanation TEXT,
+        url TEXT,
+        date DATE,
+        media_type VARCHAR(50)
+        );
+        """
+        ## Execute the query
+        postgres_hook.run(create_table_query)
 
 
     ##step 2 : Extract the data from the API data (APOD) Astronomy Picture of the Day
