@@ -1,15 +1,15 @@
 from airflow import DAG
-from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.decorators import task
+from airflow.providers.http.operators.http import HttpOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.dates import days_ago
+from datetime import datetime
 import json
 
 ##Define the DAG
 with DAG(
     dag_id='nasa_apod_postgres',
-    start_date=days_ago(1),
-    schedule_interval='@daily',
+    start_date=datetime(2026, 6, 18),
+    schedule='@daily',
     catchup=False
 ) as dag:
     
@@ -39,7 +39,7 @@ with DAG(
     ##https://api.nasa.gov/planetary/apod?api_key=7407pdm2ubQwUVTotl2AI22yulDTRATR1FHfZgla
 
 
-    extract_data = SimpleHttpOperator(
+    extract_apod = HttpOperator(
         task_id = 'extract_apod',
         http_conn_id = 'nasa_api', ##Connection ID defined in Airflow Connections
         endpoint = 'planetary/apod', ##Nasa API endpoint for APOD
@@ -81,6 +81,11 @@ with DAG(
 
     ##step 5 : Verify the data DBViewer 
 
+    
+
     ##Step 6 : Define the task dependencies
 
-    extract_data >> transform_apod_data >> load_data_to_postgres
+    create_table() >> extract_apod ##Ensure the table is created before extracting data
+    api_response = extract_apod.output ##Get the API response from the extraction task
+    transformed_data = transform_apod_data(api_response) ##Transform the data
+    load_data_to_postgres(transformed_data) ##Load the transformed data into Postgres
